@@ -1,0 +1,6 @@
+ARG VERSION={{ version }}
+ARG DOCKER_USER={{ docker_user }}
+ARG DOCKER_REPO={{ docker_repo }}
+
+FROM ${DOCKER_USER}/${DOCKER_REPO}:${VERSION}
+

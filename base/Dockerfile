@@ -1,0 +1,23 @@
+ARG VERSION=0.0.20
+ARG DOCKER_USER=dorgeln
+ARG DOCKER_REPO=microbe
+
+FROM ${DOCKER_USER}/${DOCKER_REPO}:stage-${VERSION} as stage
+ARG NB_USER="jovyan"
+ARG NB_UID="1000"
+ARG NB_GID="100"
+
+RUN find /env -name "*.pyc" -exec rm -rf {} \; && \
+    find /env -name "*.pyx" -exec rm -rf {} \; && \
+    find /env -name '*.a' -delete && \
+    find /env -name '__pycache__' -type d -exec rm -rf '{}' '+' && \
+    rm -rf /env/conda-meta && \
+    rm -rf /env/include
+
+FROM ${DOCKER_USER}/${DOCKER_REPO}:core-${VERSION}
+
+COPY --chown=${NB_USER} --from=stage /env  ${ENV_ROOT}
+
+WORKDIR ${HOME}
+CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]
+EXPOSE 8888

@@ -1,0 +1,20 @@
+version: 0.0.20
+
+nb:
+  user: jovyan
+  uid: 1000
+  gid: 100
+
+docker:
+  user: dorgeln
+  repo: microbe
+
+alpine:
+  pkg: bash tar bzip2 curl sudo git
+
+mamba:
+  pkg: python=3.8 numpy pandas jupyterlab altair altair_saver nbgitpuller jupyter-server-proxy jupyterlab-spellchecker pyyaml toml matplotlib jupyterlab-git cython bash_kernel
+debug: true
+run:
+  echo: true
+
