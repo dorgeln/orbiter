@@ -2,4 +2,4 @@
 
 FROM dorgeln/microbe:0.0.20
 
-LABEL maintainer=Andreas Trawoeger <atrawog@dorgeln.org>
+LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"

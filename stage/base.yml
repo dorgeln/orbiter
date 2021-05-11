@@ -17,4 +17,5 @@ dependencies:
   - jupyterlab-git
   - cython
   - bash_kernel
-  - vega_datasets 
+  - invoke
+#  - vega_datasets 
