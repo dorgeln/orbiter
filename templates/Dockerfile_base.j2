@@ -2,9 +2,9 @@
 
 FROM {{ docker_user }}/{{ docker_repo }}:stage-{{ version }} as stage
 
-RUN find /env -name "*.pyc" -exec rm -rf {} \; && \
-    find /env -name "*.pyx" -exec rm -rf {} \; && \
-    find /env -name '*.a' -delete && \
+RUN find /env -name "*.pyc" -exec rm -f {} \; && \
+    find /env -name "*.pyx" -exec rm -f {} \; && \
+    find /env -name '*.a' -exec rm -f {} \; && \
     find /env -name '__pycache__' -type d -exec rm -rf '{}' '+'
 
 

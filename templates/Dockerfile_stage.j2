@@ -7,6 +7,5 @@ LABEL maintainer="{{ maintainer }}"
 COPY base.yml base.yml
 
 RUN --mount=type=cache,id=mamba-pkgs,target=/env/mamba/pkgs,uid={{ nb_uid }},gid={{ nb_gid }} \
-    --mount=type=cache,id=mamba-meta,target=/env/mamba/conda-meta,uid={{ nb_uid }},gid={{ nb_gid }} \
     ${MAMBA_EXE} install -y -n base -f base.yml
 

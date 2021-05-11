@@ -20,8 +20,7 @@ RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /
 RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile && rm /etc/profile.d/locale.sh
 
 ENV ENV_ROOT="/env"
-ENV LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
+ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
     SHELL=/bin/bash \
     NB_USER=${NB_USER} \
