@@ -1,20 +1,11 @@
-ARG VERSION=0.0.20
-ARG DOCKER_USER=dorgeln
-ARG DOCKER_REPO=microbe
+#syntax=docker/dockerfile:1.2
 
-FROM ${DOCKER_USER}/${DOCKER_REPO}:core-${VERSION} as core
+FROM dorgeln/microbe:core-0.0.20 as core
 
-# RUN ${MAMBA_EXE} create -p ${MAMBA_ROOT_PREFIX}
+LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
 
 COPY base.yml base.yml
 
 RUN --mount=type=cache,id=mamba-pkgs,target=/env/mamba/pkgs,uid=1000,gid=100 \
+    --mount=type=cache,id=mamba-meta,target=/env/mamba/conda-meta,uid=1000,gid=100 \
     ${MAMBA_EXE} install -y -n base -f base.yml
-
-# RUN ${MAMBA_EXE} create -y -f base.yml  -p ${MAMBA_ROOT_PREFIX}
-
-# COPY mamba.pkg mamba.pkg
-#RUN --mount=type=cache,id=mamba-pkgs,target=/env/mamba/pkgs,uid=1000,gid=100 \
-#    PKG=`cat mamba.pkg` && \
-#    echo Installing ${PKG} && \
-#    ${MAMBA_EXE} install  ${PKG} -v -y -c conda-forge -p ${MAMBA_ROOT_PREFIX} 

@@ -1,6 +1,5 @@
-ARG VERSION={{ version }}
-ARG DOCKER_USER={{ docker_user }}
-ARG DOCKER_REPO={{ docker_repo }}
+#syntax=docker/dockerfile:1.2
 
-FROM ${DOCKER_USER}/${DOCKER_REPO}:${VERSION}
+FROM {{ docker_user }}/{{ docker_repo }}:{{ version }}
 
+LABEL maintainer={{ maintainer }}

@@ -1,4 +1,5 @@
 version: 0.0.20
+maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
 
 nb:
   user: jovyan
@@ -12,8 +13,26 @@ docker:
 alpine:
   pkg: bash tar bzip2 curl sudo git
 
-mamba:
-  pkg: python=3.8 numpy pandas jupyterlab altair altair_saver nbgitpuller jupyter-server-proxy jupyterlab-spellchecker pyyaml toml matplotlib jupyterlab-git cython bash_kernel
+base:
+  channels:
+    - conda-forge
+
+  dependencies:
+    - python=3.8 
+    - numpy
+    - pandas
+    - jupyterlab
+    - jupyter-server-proxy
+    - jupyterlab-spellchecker
+    - jupyterlab-git
+    - altair
+    - altair_saver
+    - nbgitpuller
+    - matplotlib
+    - cython
+    - bash_kernel
+    - invoke
+
 debug: true
 run:
   echo: true

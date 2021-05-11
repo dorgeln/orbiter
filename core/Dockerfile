@@ -1,11 +1,12 @@
 #syntax=docker/dockerfile:1.2
 
 FROM frolvlad/alpine-glibc
-ARG NB_USER=jovyan
-ARG NB_UID=1000
-ARG NB_GID=100
 
-LABEL maintainer="Andreas Trawöger <atrawog@dorgeln.org>"
+LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
+
+ENV NB_USER=jovyan \
+    NB_UID=1000 \
+    NB_GID=100
 
 COPY alpine.pkg alpine.pkg
 RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  apk add --no-cache ${PKG}

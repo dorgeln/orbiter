@@ -1,20 +1,16 @@
-ARG VERSION={{ version }}
-ARG DOCKER_USER={{ docker_user }}
-ARG DOCKER_REPO={{ docker_repo }}
+#syntax=docker/dockerfile:1.2
 
-FROM ${DOCKER_USER}/${DOCKER_REPO}:stage-${VERSION} as stage
-ARG NB_USER="jovyan"
-ARG NB_UID="1000"
-ARG NB_GID="100"
+FROM {{ docker_user }}/{{ docker_repo }}:stage-{{ version }} as stage
 
 RUN find /env -name "*.pyc" -exec rm -rf {} \; && \
     find /env -name "*.pyx" -exec rm -rf {} \; && \
     find /env -name '*.a' -delete && \
-    find /env -name '__pycache__' -type d -exec rm -rf '{}' '+' && \
-    rm -rf /env/conda-meta && \
-    rm -rf /env/include
+    find /env -name '__pycache__' -type d -exec rm -rf '{}' '+'
 
-FROM ${DOCKER_USER}/${DOCKER_REPO}:core-${VERSION}
+
+FROM {{ docker_user }}/{{ docker_repo }}:core-{{ version }} as core
+
+LABEL maintainer="{{ maintainer }}"
 
 COPY --chown=${NB_USER} --from=stage /env  ${ENV_ROOT}
 

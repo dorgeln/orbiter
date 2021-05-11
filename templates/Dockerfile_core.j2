@@ -1,11 +1,12 @@
 #syntax=docker/dockerfile:1.2
 
 FROM frolvlad/alpine-glibc
-ARG NB_USER={{ nb_user }}
-ARG NB_UID={{ nb_uid }}
-ARG NB_GID={{ nb_gid }}
 
-LABEL maintainer="Andreas Trawöger <atrawog@dorgeln.org>"
+LABEL maintainer="{{ maintainer }}"
+
+ENV NB_USER={{ nb_user }} \
+    NB_UID={{ nb_uid }} \
+    NB_GID={{ nb_gid }}
 
 COPY alpine.pkg alpine.pkg
 RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  apk add --no-cache ${PKG}

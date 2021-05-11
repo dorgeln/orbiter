@@ -1,5 +1,5 @@
-ARG VERSION=0.0.20
-ARG DOCKER_USER=dorgeln
-ARG DOCKER_REPO=microbe
+#syntax=docker/dockerfile:1.2
 
-FROM ${DOCKER_USER}/${DOCKER_REPO}:${VERSION}
+FROM dorgeln/microbe:0.0.20
+
+LABEL maintainer=Andreas Trawoeger <atrawog@dorgeln.org>
