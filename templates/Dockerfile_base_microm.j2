@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM dorgeln/microbe:stage-0.0.20 as stage
+FROM {{ docker_user }}/{{ docker_repo }}:builder-microm-{{ version }} as builder
 
 RUN find /env -name "*.pyc" -exec rm -f {} \; && \
     find /env -name "*.pyx" -exec rm -f {} \; && \
@@ -8,11 +8,11 @@ RUN find /env -name "*.pyc" -exec rm -f {} \; && \
     find /env -name '__pycache__' -type d -exec rm -rf '{}' '+'
 
 
-FROM dorgeln/microbe:core-0.0.20 as core
+FROM {{ docker_user }}/{{ docker_repo }}:core-{{ version }} as core
 
-LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
+LABEL maintainer="{{ maintainer }}"
 
-COPY --chown=${NB_USER} --from=stage /env  ${ENV_ROOT}
+COPY --chown=${NB_USER} --from=builder /env  ${ENV_ROOT}
 
 WORKDIR ${HOME}
 CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]

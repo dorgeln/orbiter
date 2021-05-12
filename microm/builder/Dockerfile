@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM dorgeln/microbe:core-0.0.20 as core
+FROM dorgeln/microbe:core-microm-0.0.20 as core
 
 LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
 

@@ -1,37 +1,40 @@
 version: 0.0.20
 maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
 
+docker:
+  user: dorgeln
+  repo: microbe
+
+
 nb:
   user: jovyan
   uid: 1000
   gid: 100
 
-docker:
-  user: dorgeln
-  repo: microbe
+microm:
+  alpine:
+    from: frolvlad/alpine-glibc
+    pkg: bash tar bzip2 curl sudo git
 
-alpine:
-  pkg: bash tar bzip2 curl sudo git
+  base:
+    channels:
+      - conda-forge
 
-base:
-  channels:
-    - conda-forge
+    dependencies:
+      - python=3.8 
+      - numpy
+      - pandas
+      - jupyterlab
+      - jupyter-server-proxy
+      - jupyterlab-spellchecker
+      - jupyterlab-git
+      - altair
+      - altair_saver
+      - nbgitpuller
+      - matplotlib
+      - cython
+      - bash_kernel
 
-  dependencies:
-    - python=3.8 
-    - numpy
-    - pandas
-    - jupyterlab
-    - jupyter-server-proxy
-    - jupyterlab-spellchecker
-    - jupyterlab-git
-    - altair
-    - altair_saver
-    - nbgitpuller
-    - matplotlib
-    - cython
-    - bash_kernel
-    - invoke
 
 debug: true
 run:
