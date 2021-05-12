@@ -12,28 +12,28 @@ nb:
   gid: 100
 
 microm:
+  name: base
   alpine:
     from: frolvlad/alpine-glibc
     pkg: bash tar bzip2 curl sudo git
 
-  base:
-    channels:
-      - conda-forge
+  channels:
+    - conda-forge
 
-    dependencies:
-      - python=3.8 
-      - numpy
-      - pandas
-      - jupyterlab
-      - jupyter-server-proxy
-      - jupyterlab-spellchecker
-      - jupyterlab-git
-      - altair
-      - altair_saver
-      - nbgitpuller
-      - matplotlib
-      - cython
-      - bash_kernel
+  dependencies:
+    - python=3.8 
+    - numpy
+    - pandas
+    - jupyterlab
+    - jupyter-server-proxy
+    - jupyterlab-spellchecker
+    - jupyterlab-git
+    - altair
+    - altair_saver
+    - nbgitpuller
+    - matplotlib
+    - cython
+    - bash_kernel
 
 
 debug: true

@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM {{ docker_user }}/{{ docker_repo }}:builder-microm-{{ version }} as builder
+FROM {{ docker_user }}/{{ docker_repo }}:builder-{{ variant }}-{{ version }} as builder
 
 RUN find /env -name "*.pyc" -exec rm -f {} \; && \
     find /env -name "*.pyx" -exec rm -f {} \; && \
