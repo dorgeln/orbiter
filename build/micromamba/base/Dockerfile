@@ -1,0 +1,18 @@
+#syntax=docker/dockerfile:1.2
+
+FROM dorgeln/microbe:micromamba-base-build-0.0.20 as build
+
+RUN find /env -name "*.pyc" -exec rm -f {} \; && \
+    find /env -name "*.pyx" -exec rm -f {} \; && \
+    find /env -name '*.a' -exec rm -f {} \; && \
+    find /env -name '__pycache__' -type d -exec rm -rf '{}' '+'
+
+FROM dorgeln/microbe:micromamba-core-0.0.20
+
+LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
+
+COPY --chown=${NB_USER} --from=build /env  ${ENV_ROOT}
+
+WORKDIR ${HOME}
+CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]
+EXPOSE 8888
