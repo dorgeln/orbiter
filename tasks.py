@@ -229,12 +229,12 @@ def readme(c):
 
     invoke_list=json.loads(c.run("inv -l --list-format=json",hide=True).stdout)
 
-    readme = templates.get_template("README.j2")
+    readme = templates.get_template("README")
     with open("README.md","w") as file:
         with open("invoke.yaml","r") as invoke_yaml:
             file.write(readme.render(invoke_list=invoke_list,invoke_yaml=invoke_yaml.read()))
 
-@task()
+@task(build)
 def docker_push(c):
     "Push images to docker hub"
 

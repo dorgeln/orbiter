@@ -1,0 +1,20 @@
+# microbe
+Jupyter Lab micro image
+
+# Tasks
+
+Microbe includes the following [Invoke](http://www.pyinvoke.org/) tasks to help with generating and publishing images.
+
+| Task | Help |
+| --- | --- |
+{% for task in invoke_list['tasks'] -%}
+| {{ task['name'] }} | {{ task['help'] }} |
+{% endfor %}
+
+# Configuration 
+
+All microbe configuration is done in invoke.yaml. 
+
+```
+{{ invoke_yaml }}
+```
