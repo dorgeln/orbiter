@@ -3,65 +3,175 @@ import jinja2
 import yaml
 import json
 import git
+import os.path
 
-templates = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))
+
+#templates = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))
+templates = jinja2.Environment(loader=jinja2.FileSystemLoader("builder"))
+
+
+@task()
+def clean(c):
+    "Clean generated files"
+
+    c.run("rm -f pyproject.toml package*.json Dockerfile README.md build-*",warn=True)
+    c.run("rm -rf  build",warn=True)
+
+
+@task()
+def clean_docker(c):
+    "Clean dangling docker images"
+
+    c.run('docker rmi $(docker images -f "dangling=true" -q)',warn=True)
 
 def gittest(c):
     g = git.Repo().git
     print(str(g.branch("--show-current")))
 
-def create_dir(c,variant,image):
 
-    c.run('mkdir -p {variant}/{image}'.format(variant=variant,image=image))
+def gen_npm(c,variant,image,path):
 
-def create_dockerfile(c,variant,image):
+    pkg=c[variant][image].npm
+    file='{path}/package.json'.format(path=path,variant=variant,image=image)
 
-    dockerfile = templates.get_template("Dockerfile_{image}_{variant}.j2".format(variant=variant,image=image))
-    with open('{variant}/{image}/Dockerfile'.format(variant=variant,image=image),'w') as file:
-        file.write(dockerfile.render(variant=variant,image=image,version=c.version,maintainer=c.maintainer,docker_user=c.docker.user,docker_repo=c.docker.repo,nb_user=c.nb.user,nb_uid=c.nb.uid,nb_gid=c.nb.gid))
+    c.run("npm install - -package-lock-only {pkg}".format(pkg=pkg))
+    c.run("cp package.json {file}".format(file=file))
 
-def create_alpine(c,variant,image):
+def gen_pip(c,variant,image,path):
 
-    with open('{variant}/{image}/alpine.pkg'.format(variant=variant,image=image),'w') as file:
-        file.write(c[variant].alpine.pkg+'\n')
+    pkg=c[variant][image].python
+    file='{path}/requirementb.txt'.format(path=path,variant=variant,image=image)
 
-def create_specs(c,variant,image):
+    if not os.path.exists('pyproject.toml'):
+        c.run("poetry init -n --python '{python_required}'".format(python_required=c.python.required))
 
-    name=c[variant].name
-    channels=c[variant].channels
-    dependencies=c[variant].dependencies
+    c.run("poetry config virtualenvb.path .env")
+    c.run("poetry config cache-dir .cache")
+    c.run("poetry config virtualenvb.in-project true")
 
-    specs={}
-    specs['name']=name
-    specs['channels']=channels
-    specs['dependencies']=dependencies
-
-    with open(r'{variant}/{image}/{name}.yml'.format(variant=variant,image=image,name=name), 'w') as file:
-        yaml.dump(specs, file, sort_keys=True, canonical=False, explicit_start=True)
-
-def docker_build(c,variant,image):
-
-    c.run("docker buildx build -t {docker_user}/{docker_repo}:{image}-{variant}-{version} {variant}/{image} | tee build-{variant}-{image}.log".format(
-        version=c.version, docker_user=c.docker.user, docker_repo=c.docker.repo,variant=variant,image=image))
+    c.run("poetry add -v --lock {pkg}".format(pkg=pkg))
+    c.run("poetry export --without-hashes -f requirementb.txt -o {file}".format(file=file))
 
 
-def builder(c,variant,image):
+def get_path(b):
+    return os.path.join(*b._keypath)
 
-    create_dir(c,variant=variant,image=image)  
-    create_dockerfile(c,variant=variant,image=image)
-    create_alpine(c,variant=variant,image=image)
-    if variant=='microm' and image=='builder':
-        create_specs(c,variant=variant,image=image)
-    docker_build(c,variant=variant,image=image)
+def mkdir(c,b):
+
+    c.run('mkdir -p {path}'.format(path=get_path(b)))
+
+    # print(path(stage))
+
+    #path = 'stages/{variant}/{image}'.format(variant=variant,image=image)
+    #c.run('mkdir -p {path}'.format(path=path))
+    #return path       
+
+        
+def get_build(b):
+    return(b._keypath[1])
+templates.filters['build'] = get_build
+
+def get_stage(b):
+    return(b._keypath[-1])
+templates.filters['stage'] = get_stage
+
+def get_user(b):
+    return(b._root.docker.user)
+templates.filters['user'] = get_user
+
+def get_repo(b):
+    return(b._root.docker.repo)
+templates.filters['repo'] = get_repo
+
+def get_version(b):
+    return(b._root.version)
+templates.filters['version'] = get_version
+
+def get_maintainer(b):
+    return(b._root.maintainer)
+templates.filters['maintainer'] = get_maintainer
+
+def get_uid(b):
+    return(b._root.nb.uid)
+templates.filters['uid'] = get_uid
+
+def get_gid(b):
+    return(b._root.nb.gid)
+templates.filters['gid'] = get_gid
+
+def get_image(b):
+    return(b.image)
+templates.filters['image'] = get_image
+
+def get_conda(b):
+    return(dict(b.conda))
+templates.filters['conda'] = get_conda
+
+def get_imagename(b):
+    return '-'.join(b._keypath[1:])+'-'+get_version(b)
+templates.filters['imagename'] = get_imagename
 
 
-@task()
-def build_microm(c):
-    "Build microm images"
 
-    builder(c,variant='microm',image='core')
-    builder(c,variant='microm',image='builder')
-    builder(c,variant='microm',image='base')
+def gen_apk(c,b):
+
+    pkgs = ' '.join([pkg for pkg in b.apk])
+    with open('{path}/alpine.pkg'.format(path=get_path(b)),'w') as file:
+        file.write(pkgs+'\n')
+
+def gen_conda(c,b):
+
+    with open(r'{path}/conda.yml'.format(path=get_path(b)), 'w') as file:
+        yaml.dump(get_conda(b), file, sort_keys=True, canonical=False, explicit_start=True)
+
+
+
+def docker_build(c,b):
+
+    c.run("docker buildx build --progress plain -t {user}/{repo}:{imagename} {path} | tee build-{imagename}.log".format(
+
+        user=get_user(b),
+        repo=get_repo(b),  
+        imagename=get_imagename(b),
+        path=get_path(b)
+        ))
+
+def gen_builder(c,b):
+
+    builder=b.builder
+
+    print("Using Builder",builder)
+
+    dockerfile = templates.get_template(builder)
+    with open('{path}/Dockerfile'.format(path=get_path(b)),'w') as file:
+        file.write(dockerfile.render(b=b))
+
+
+def builder(c,b):
+
+    print ("Building Images")
+
+    if 'build' in b:
+        builder(c,b.build)
+
+    mkdir(c,b)
+     
+    if 'builder' in b:
+        gen_builder(c,b)
+    
+    if 'apk' in b:
+        gen_apk(c,b)
+
+    if 'conda' in b:
+        gen_conda(c,b)
+
+    if 'npm' in b:
+        gen_npm(c,b)
+
+    if 'pip' in b:
+        gen_pip(c,b)
+
+    docker_build(c,b) 
 
 
 @task()
@@ -69,12 +179,12 @@ def build(c):
     "Build all images"
 
     print("Building images")
-    build_microm(c)
 
-    dockerfile = templates.get_template("Dockerfile.j2")
-    with open("Dockerfile","w") as file:
-        file.write(dockerfile.render(maintainer=c.maintainer,version=c.version,docker_user=c.docker.user,docker_repo=c.docker.repo))
+    b=c.build['micromamba']['core']
+    builder(c,b)
 
+    b=c.build['micromamba']['base']
+    builder(c,b)
 
 @task()
 def images(c):
@@ -124,7 +234,7 @@ def readme(c):
         with open("invoke.yaml","r") as invoke_yaml:
             file.write(readme.render(invoke_list=invoke_list,invoke_yaml=invoke_yaml.read()))
 
-@task(build)
+@task()
 def docker_push(c):
     "Push images to docker hub"
 
@@ -153,10 +263,13 @@ def prune(c):
 
 
 @task()
-def clean(c):
-    "Clean dangling docker images and generated files"
+def test(c):
+    #print(dir(c.build.conda))
+    #print(c.build.conda.core._keypath[-1])
+    #print(c.build.conda.core._root.version)
+    #print(c.build.conda._config)
+    #print(c.build.micromamba.base.build._keypath)
+    #print(c.build.micromamba.base.build._keypath[1])
+    #print(c.build.micromamba.base.build._keypath[1:])
 
-    c.run('docker rmi $(docker images -f "dangling=true" -q)',warn=True)
-    c.run("rm -f Dockerfile README.md build-* microm/core/* microm/builder/* microm/base/*")
-    c.run("rmdir microm/core microm/builder microm/base microm")
-
+    print(get_imagename(c.build.micromamba.base.build))

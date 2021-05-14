@@ -1,12 +1,12 @@
 #syntax=docker/dockerfile:1.2
 
-FROM frolvlad/alpine-glibc
+FROM {{ b | image }}
 
-LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
+LABEL maintainer="{{ b | maintainer }}"
 
-ENV NB_USER=jovyan \
-    NB_UID=1000 \
-    NB_GID=100
+ENV NB_USER={{ b | user }} \
+    NB_UID={{ b | uid }} \
+    NB_GID={{ b | gid }}
 
 COPY alpine.pkg alpine.pkg
 RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  apk add --no-cache ${PKG}
@@ -23,9 +23,6 @@ ENV ENV_ROOT="/env"
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
     SHELL=/bin/bash \
-    NB_USER=${NB_USER} \
-    NB_UID=${NB_UID} \
-    NB_GID=${NB_GID} \
     JUPYTER_ENABLE_LAB=yes \
     USER=${NB_USER} \
     HOME=/home/${NB_USER} \
@@ -41,3 +38,4 @@ WORKDIR ${ENV_ROOT}
 RUN curl -L https://micromamba.snakepit.net/api/micromamba/linux-64/0.11.3 | tar -xj -C /env bin/micromamba
 
 RUN ${MAMBA_EXE} create -p ${MAMBA_ROOT_PREFIX}
+
