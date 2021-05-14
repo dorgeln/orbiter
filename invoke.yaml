@@ -22,7 +22,7 @@ build:
 
       apk:
         - bash 
-        - tar 
+        - tar
         - bzip2 
         - curl 
         - sudo
@@ -55,16 +55,41 @@ build:
             - bash_kernel
 
     full:
+      image: core   
+      builder: micromamba_deploy
+
+      build:
+        image: base-build 
+        builder: micromamba_builder
         conda:
           name: base
           channels:
             - conda-forge
           dependencies:
-            - invoke
+            - intake
+            - intake-stac
+            - sat-search
+            - fiona 
+            - shapely
+            - pyproj
+            - rtree
+            - geopandas
+            - rasterio
+            - geopy
+            - xarray
+            - dvc
+            - jupyter-book
+            - h5py
+            - netcdf4
+            - cysgp4
+            - asciinema
+            - Pillow
 
 
-  alpine:
+  pip:
     core:
+      image: alpine:20210212
+      builder: pip_core
       apk:
         - sudo 
         - bash 
@@ -92,69 +117,9 @@ build:
         - pixman
         - zeromq 
 
-    builder:
-      apk: 
-        - build-base
-        - alpine-sdk
-        - g++
-        - expat-dev
-        - openssl-dev
-        - zlib-dev
-        - ncurses-dev
-        - bzip2-dev
-        - xz-dev
-        - sqlite-dev
-        - libffi-dev
-        - linux-headers
-        - readline-dev
-        - pixman-dev
-        - cairo-dev
-        - pango-dev
-        - openjpeg-dev
-        - librsvg-dev
-        - giflib-dev
-        - libpng-dev
-        - openblas-dev
-        - lapack-dev
-        - gfortran
-        - libxml2-dev
-        - zeromq-dev
-        - gnupg
-        - expat-dev
-        - gdbm-dev
-        - libnsl-dev
-        - libtirpc-dev
-        - pax-utils
-        - util-linux-dev
-        - xz-dev
-        - zlib-dev
-        - libjpeg-turbo-dev
-        - tiff-dev
-        - libwebp-dev
-        - libimagequant-dev
-        - lcms2-dev
-        - cargo
-        - libxml2-dev
-        - libxslt-dev
-        - boost-dev 
-      npm:
-        - vega-lite
-        - vega-cli
-        - canvas
-        - configurable-http-proxy
-      pip:
-        - numpy
-        - pandas
-        - jupyterlab
-        - altair
-        - altair_saver
-        - nbgitpuller
-        - jupyter-server-proxy
-        - jupyterlab-spellchecker
-        - matplotlib
-        - jupyterlab-git
-
     base:
+      image: core   
+      builder: pip_deploy
       apk:
         - neofetch
         - libffi
@@ -173,7 +138,71 @@ build:
       pip:
         - vega_datasets
 
-    builder-full:
+      build:
+        image: core 
+        builder: pip_builder
+        apk: 
+          - build-base
+          - alpine-sdk
+          - g++
+          - expat-dev
+          - openssl-dev
+          - zlib-dev
+          - ncurses-dev
+          - bzip2-dev
+          - xz-dev
+          - sqlite-dev
+          - libffi-dev
+          - linux-headers
+          - readline-dev
+          - pixman-dev
+          - cairo-dev
+          - pango-dev
+          - openjpeg-dev
+          - librsvg-dev
+          - giflib-dev
+          - libpng-dev
+          - openblas-dev
+          - lapack-dev
+          - gfortran
+          - libxml2-dev
+          - zeromq-dev
+          - gnupg
+          - expat-dev
+          - gdbm-dev
+          - libnsl-dev
+          - libtirpc-dev
+          - pax-utils
+          - util-linux-dev
+          - xz-dev
+          - zlib-dev
+          - libjpeg-turbo-dev
+          - tiff-dev
+          - libwebp-dev
+          - libimagequant-dev
+          - lcms2-dev
+          - cargo
+          - libxml2-dev
+          - libxslt-dev
+          - boost-dev 
+        npm:
+          - vega-lite
+          - vega-cli
+          - canvas
+          - configurable-http-proxy
+        pip:
+          - numpy
+          - pandas
+          - jupyterlab
+          - altair
+          - altair_saver
+          - nbgitpuller
+          - jupyter-server-proxy
+          - jupyterlab-spellchecker
+          - matplotlib
+          - jupyterlab-git
+
+    full:
       apk: 
         - geos-dev
         - proj-dev

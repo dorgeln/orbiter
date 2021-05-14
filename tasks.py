@@ -5,8 +5,6 @@ import json
 import git
 import os.path
 
-
-#templates = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))
 templates = jinja2.Environment(loader=jinja2.FileSystemLoader("builder"))
 
 
@@ -24,34 +22,6 @@ def clean_docker(c):
 
     c.run('docker rmi $(docker images -f "dangling=true" -q)',warn=True)
 
-def gittest(c):
-    g = git.Repo().git
-    print(str(g.branch("--show-current")))
-
-
-def gen_npm(c,variant,image,path):
-
-    pkg=c[variant][image].npm
-    file='{path}/package.json'.format(path=path,variant=variant,image=image)
-
-    c.run("npm install - -package-lock-only {pkg}".format(pkg=pkg))
-    c.run("cp package.json {file}".format(file=file))
-
-def gen_pip(c,variant,image,path):
-
-    pkg=c[variant][image].python
-    file='{path}/requirementb.txt'.format(path=path,variant=variant,image=image)
-
-    if not os.path.exists('pyproject.toml'):
-        c.run("poetry init -n --python '{python_required}'".format(python_required=c.python.required))
-
-    c.run("poetry config virtualenvb.path .env")
-    c.run("poetry config cache-dir .cache")
-    c.run("poetry config virtualenvb.in-project true")
-
-    c.run("poetry add -v --lock {pkg}".format(pkg=pkg))
-    c.run("poetry export --without-hashes -f requirementb.txt -o {file}".format(file=file))
-
 
 def get_path(b):
     return os.path.join(*b._keypath)
@@ -59,12 +29,6 @@ def get_path(b):
 def mkdir(c,b):
 
     c.run('mkdir -p {path}'.format(path=get_path(b)))
-
-    # print(path(stage))
-
-    #path = 'stages/{variant}/{image}'.format(variant=variant,image=image)
-    #c.run('mkdir -p {path}'.format(path=path))
-    #return path       
 
         
 def get_build(b):
@@ -86,6 +50,10 @@ templates.filters['repo'] = get_repo
 def get_version(b):
     return(b._root.version)
 templates.filters['version'] = get_version
+
+def get_python_version(b):
+    return(b._root.python.version)
+templates.filters['python_version'] = get_python_version
 
 def get_maintainer(b):
     return(b._root.maintainer)
@@ -112,6 +80,14 @@ def get_imagename(b):
 templates.filters['imagename'] = get_imagename
 
 
+def docker_build(c,b):
+
+    c.run("docker buildx build --progress plain --load -t {user}/{repo}:{imagename} {path} | tee build-{imagename}.log".format(
+        user=get_user(b),
+        repo=get_repo(b),  
+        imagename=get_imagename(b),
+        path=get_path(b)
+        ))
 
 def gen_apk(c,b):
 
@@ -125,16 +101,30 @@ def gen_conda(c,b):
         yaml.dump(get_conda(b), file, sort_keys=True, canonical=False, explicit_start=True)
 
 
+def gen_npm(c,b):
 
-def docker_build(c,b):
+    pkgs = ' '.join([pkg for pkg in b.npm])
+    file='{path}/package.json'.format(path=get_path(b))
 
-    c.run("docker buildx build --progress plain -t {user}/{repo}:{imagename} {path} | tee build-{imagename}.log".format(
+    c.run("npm install - -package-lock-only {pkgs}".format(pkgs=pkgs))
+    c.run("cp package.json {file}".format(file=file))
 
-        user=get_user(b),
-        repo=get_repo(b),  
-        imagename=get_imagename(b),
-        path=get_path(b)
-        ))
+
+def gen_pip(c,b):
+
+    pkgs = ' '.join([pkg for pkg in b.pip])
+    file='{path}/requirements.txt'.format(path=get_path(b))
+
+    if not os.path.exists('pyproject.toml'):
+        c.run("poetry init -n --python '{python_required}'".format(python_required=c.python.required))
+
+    c.run("poetry config virtualenvs.path .env")
+    c.run("poetry config cache-dir .cache")
+    c.run("poetry config virtualenvs.in-project true")
+
+    c.run("poetry add -v --lock {pkgs}".format(pkgs=pkgs))
+    c.run("poetry export --without-hashes -f requirements.txt -o {file}".format(file=file))
+
 
 def gen_builder(c,b):
 
@@ -173,18 +163,6 @@ def builder(c,b):
 
     docker_build(c,b) 
 
-
-@task()
-def build(c):
-    "Build all images"
-
-    print("Building images")
-
-    b=c.build['micromamba']['core']
-    builder(c,b)
-
-    b=c.build['micromamba']['base']
-    builder(c,b)
 
 @task()
 def images(c):
@@ -234,6 +212,16 @@ def readme(c):
         with open("invoke.yaml","r") as invoke_yaml:
             file.write(readme.render(invoke_list=invoke_list,invoke_yaml=invoke_yaml.read()))
 
+@task(clean,readme)
+def build(c):
+    "Build all images"
+
+    print("Building images")
+
+    
+    builder(c,c.build['pip']['core'])
+    builder(c,c.build['pip']['base'])
+
 @task(build)
 def docker_push(c):
     "Push images to docker hub"
@@ -249,11 +237,11 @@ def docker_pushrm(c):
     c.run("docker pushrm {docker_user}/{docker_repo}".format(docker_user=c.docker.user, docker_repo=c.docker.repo))
 
 
-@task(readme,docker_push,docker_pushrm)
+@task(build,readme,docker_push,docker_pushrm)
 def push(c):
-    "Push changes to git repo and docker hub"
+    "Push images to docker hub"
 
-    print("Pushing changes")
+    print("Pushing Images")
 
 
 @task()
@@ -261,6 +249,10 @@ def prune(c):
     "Prune all local docker images"
     c.run("docker system prune -a")
 
+
+def gittest(c):
+    g = git.Repo().git
+    print(str(g.branch("--show-current")))
 
 @task()
 def test(c):
