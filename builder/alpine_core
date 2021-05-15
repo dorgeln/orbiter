@@ -1,7 +1,6 @@
-
-{% if 'apk' in b %}
+{% if 'apk' in b -%}
 {% include 'apk' %}
-{% endif %}
+{% endif -%}
 
 RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
 RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile
