@@ -6,20 +6,43 @@ ENV VERSION=0.0.20
 ENV PYTHON_VERSION=3.8.8
 ENV DOCKER_USER=dorgeln
 ENV DOCKER_REPO=microbe
-ENV NB_USER=dorgeln
+ENV NB_USER=jovyan
 ENV NB_UID=1000
 ENV NB_GID=100
 
 LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
 
-COPY alpine.pkg alpine.pkg
-RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  apk add --no-cache ${PKG}
-RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
 
-RUN adduser --disabled-password  -u ${NB_UID} -G users ${NB_USER} && \
-    addgroup -g ${NB_UID}  ${NB_USER} && \
-    adduser ${NB_USER} ${NB_USER} && \
-    adduser ${NB_USER} wheel
+
+USER root
+COPY alpine.pkg alpine.pkg
+RUN --mount=type=cache,id=apk-cache,target=/etc/apk/cache \
+    PKG=`cat alpine.pkg` && echo "Installing ${PKG}" && apk add ${PKG}
+
+
+RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
+RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile
+
+USER root
+RUN adduser --disabled-password  -u 1000 -G users jovyan && \
+    adduser jovyan wheel
+
+ENV VERSION=0.0.20 \
+    PYTHON_VERSION=3.8.8 \
+    DOCKER_USER=dorgeln \
+    DOCKER_REPO=microbe \
+    NB_USER=jovyan \
+    NB_UID=1000 \ 
+    NB_GID=100
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    SHELL=/bin/bash \
+    JUPYTER_ENABLE_LAB=yes \
+    USER=${NB_USER} \
+    HOME=/home/${NB_USER} \
+    REPO_DIR=/home/${NB_USER} \
+    XDG_CACHE_HOME=/home/${NB_USER}/.cache
 
 ENV ENV_ROOT="/env" 
 ENV BUILD_ROOT="/build"

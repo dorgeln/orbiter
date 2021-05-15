@@ -1,10 +1,24 @@
 #syntax=docker/dockerfile:1.2
 
-FROM {{ b | user }}/{{ b | repo }}:{{ b | build }}-{{ b | stage }}-build-{{ b | version }} as build
-FROM {{ b | user }}/{{ b | repo }}:{{ b | build }}-{{ b | image }}-{{ b |version }}
+FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | stage }}-build-{{ b | version }} as build
+FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | image }}-{{ b |version }}
 
-COPY --chown=${NB_USER} --from=build ${ENV_ROOT} ${ENV_ROOT}
-COPY alpine.pkg alpine.pkg
-RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  sudo apk add --no-cache ${PKG}
-COPY --chown=${NB_USER} requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+{% if 'apk' in b %}
+{% include 'apk' %}
+{% endif %}
+
+{% if 'npm' in b %}
+{% include 'npm' %}
+{% endif %}
+
+{% if 'pip' in b %}
+{% include 'pip' %}
+{% endif %}
+
+COPY --chown={{ user }} --from=build /env  /env
+
+WORKDIR ${HOME}
+USER {{ b | user }}
+
+CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]
+EXPOSE 8888

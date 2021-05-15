@@ -1,0 +1,7 @@
+USER {{ b | user }}
+WORKDIR ${PYENV_ROOT}
+COPY --chown={{ b | user }} requirements.txt requirements.txt
+RUN --mount=type=cache,id=pip-cache,target=/build/cache,uid={{ b | uid }},gid={{ b | gid }} \
+    --mount=type=cache,id=pip-tmp,target=/build/tmp,uid={{ b | uid }},gid={{ b | gid }} \
+    pip install -U  pip -U setuptools -U wheel -U cython-setuptools && \
+    pip install -r requirements.txt

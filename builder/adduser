@@ -1,0 +1,3 @@
+USER root
+RUN adduser --disabled-password  -u {{ b | uid }} -G users {{ b | user }} && \
+    adduser {{ b | user }} wheel

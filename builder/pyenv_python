@@ -1,0 +1,4 @@
+USER {{ b | user }}
+WORKDIR ${PYENV_ROOT}
+RUN --mount=type=cache,id=pyenv-sources,target=/env/pyenv/sources,uid={{ b | uid }},gid={{ b | gid }} \
+pyenv install -k -s ${PYTHON_VERSION} && pyenv global ${PYTHON_VERSION}

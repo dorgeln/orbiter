@@ -1,12 +1,15 @@
 #syntax=docker/dockerfile:1.2
 
-FROM {{ b | user }}/{{ b | repo }}:{{ b | build }}-{{ b | image }}-{{ b | version }}
+FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | image }}-{{ b | version }}
 LABEL maintainer="{{ b | maintainer }}"
 
-COPY conda.yml conda.yml
-RUN --mount=type=cache,id=mamba-pkgs,target=/env/mamba/pkgs,uid={{ b | uid }},gid={{ b | gid }} \
-    ${MAMBA_EXE} install -y -n base -f conda.yml
+{% if 'apk' in b %}
+{% include 'apk' %}
+{% endif %}
 
+{% if 'conda' in b %}
+{% include 'micromamba' %}
+{% endif %}
 
 
 

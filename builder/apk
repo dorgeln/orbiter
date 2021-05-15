@@ -1,0 +1,4 @@
+USER root
+COPY alpine.pkg alpine.pkg
+RUN --mount=type=cache,id=apk-cache,target=/etc/apk/cache \
+    PKG=`cat alpine.pkg` && echo "Installing ${PKG}" && apk add ${PKG}

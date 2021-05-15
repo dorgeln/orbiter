@@ -4,6 +4,7 @@ import yaml
 import json
 import git
 import os.path
+import sys
 
 templates = jinja2.Environment(loader=jinja2.FileSystemLoader("builder"))
 
@@ -29,7 +30,6 @@ def get_path(b):
 def mkdir(c,b):
 
     c.run('mkdir -p {path}'.format(path=get_path(b)))
-
         
 def get_build(b):
     return(b._keypath[1])
@@ -40,12 +40,24 @@ def get_stage(b):
 templates.filters['stage'] = get_stage
 
 def get_user(b):
-    return(b._root.docker.user)
+    return(b._root.user)
 templates.filters['user'] = get_user
 
-def get_repo(b):
+def get_uid(b):
+    return(b._root.uid)
+templates.filters['uid'] = get_uid
+
+def get_gid(b):
+    return(b._root.gid)
+templates.filters['gid'] = get_gid
+
+def get_docker_user(b):
+    return(b._root.docker.user)
+templates.filters['docker_user'] = get_docker_user
+
+def get_docker_repo(b):
     return(b._root.docker.repo)
-templates.filters['repo'] = get_repo
+templates.filters['docker_repo'] = get_docker_repo
 
 def get_version(b):
     return(b._root.version)
@@ -59,14 +71,6 @@ def get_maintainer(b):
     return(b._root.maintainer)
 templates.filters['maintainer'] = get_maintainer
 
-def get_uid(b):
-    return(b._root.nb.uid)
-templates.filters['uid'] = get_uid
-
-def get_gid(b):
-    return(b._root.nb.gid)
-templates.filters['gid'] = get_gid
-
 def get_image(b):
     return(b.image)
 templates.filters['image'] = get_image
@@ -79,12 +83,16 @@ def get_imagename(b):
     return '-'.join(b._keypath[1:])+'-'+get_version(b)
 templates.filters['imagename'] = get_imagename
 
+def get_builder(b):
+    return(b.builder)
+templates.filters['builder)'] = get_builder
+
 
 def docker_build(c,b):
 
     c.run("docker buildx build --progress plain --load -t {user}/{repo}:{imagename} {path} | tee build-{imagename}.log".format(
-        user=get_user(b),
-        repo=get_repo(b),  
+        user=get_docker_user(b),
+        repo=get_docker_repo(b),  
         imagename=get_imagename(b),
         path=get_path(b)
         ))
@@ -127,19 +135,14 @@ def gen_pip(c,b):
 
 
 def gen_builder(c,b):
-
-    builder=b.builder
-
-    print("Using Builder",builder)
-
-    dockerfile = templates.get_template(builder)
+    dockerfile = templates.get_template(get_builder(b))
     with open('{path}/Dockerfile'.format(path=get_path(b)),'w') as file:
         file.write(dockerfile.render(b=b))
 
 
 def builder(c,b):
 
-    print ("Building Images")
+    print("Building",get_imagename(b))
 
     if 'build' in b:
         builder(c,b.build)
@@ -148,15 +151,17 @@ def builder(c,b):
      
     if 'builder' in b:
         gen_builder(c,b)
+    else:
+        sys.exit("ERROR: No builder defined for {path}".format(path=get_path(b)))    
     
     if 'apk' in b:
         gen_apk(c,b)
 
-    if 'conda' in b:
-        gen_conda(c,b)
-
     if 'npm' in b:
         gen_npm(c,b)
+
+    if 'conda' in b:
+        gen_conda(c,b)
 
     if 'pip' in b:
         gen_pip(c,b)
@@ -170,37 +175,6 @@ def images(c):
 
     c.run("docker images")
 
-
-@task(help={'image': 'Image','version':'Version'})
-def bash(c,image='base',version=None):
-    "Bash into image"
-
-    if not version:
-        version=c.version
-
-    c.run("docker run -it {docker_user}/{docker_repo}:{image}-{version} bash".format(
-         docker_user=c.docker.user, docker_repo=c.docker.repo,image=image,version=version),pty=True)
-
-
-@task(help={'image': 'Image','version':'Version'})
-def run(c,image='base',version=None):
-    "Run image"
-
-    if not version:
-        version=c.version
-    c.run("docker run -p 8888:8888 {docker_user}/{docker_repo}:{image}-{version}".format(   
-        docker_user=c.docker.user, docker_repo=c.docker.repo,image=image,version=version,), pty=True)
-
-
-@task()
-def r2d(c):
-    "Run Dockerfile with repo2docker"
-
-    c.run("docker rmi r2d-microbe",warn=True)
-    c.run("jupyter-repo2docker --debug -P --image-name r2d-microbe .".format(
-        version=c.version, docker_user=c.docker.user, docker_repo=c.docker.repo), pty=True)
-
-
 @task()
 def readme(c):
     "Update README"
@@ -213,14 +187,85 @@ def readme(c):
             file.write(readme.render(invoke_list=invoke_list,invoke_yaml=invoke_yaml.read()))
 
 @task(clean,readme)
-def build(c):
-    "Build all images"
+def build(c,build=None,image=None):
+    "Build image(s)"
 
-    print("Building images")
+    if not build:
+        build=c.build
+    else:
+        build=[build]
 
-    
-    builder(c,c.build['pip']['core'])
-    builder(c,c.build['pip']['base'])
+    for b in build:
+        if not image:
+            for i in c.build[b]:
+                builder(c,c.build[b][i])
+        else:
+            builder(c,c.build[b][image])
+
+@task(help={'image': 'Image','version':'Version'})
+def bash(c,build=None,image=None,user=None,repo=None,version=None):
+    "Bash into image"
+
+    if not build:
+        sys.exit("Please set build with -b")    
+
+    if not image:
+        sys.exit("Please set image with -i")    
+
+    if not user:
+        user=c.docker.user
+
+    if not repo:
+        repo=c.docker.repo
+
+    if not version:
+        version=c.version
+
+    c.run("docker run -it {user}/{repo}:{build}-{image}-{version} bash".format(
+        user=user,
+        repo=repo,
+        build=build,
+        image=image,
+        version=version        
+        ), pty=True)
+
+
+@task(help={'image': 'Image','version':'Version'})
+def run(c,build=None,image=None,user=None,repo=None,version=None):
+    "Run image"
+
+    if not build:
+        sys.exit("Please set build with -b")    
+
+    if not image:
+        sys.exit("Please set image with -i")    
+
+    if not user:
+        user=c.docker.user
+
+    if not repo:
+        repo=c.docker.repo
+
+    if not version:
+        version=c.version
+
+    c.run("docker run -p 8888:8888  {user}/{repo}:{build}-{image}-{version}".format(
+        user=user,
+        repo=repo,
+        build=build,
+        image=image,
+        version=version        
+        ), pty=True)
+
+
+@task()
+def r2d(c):
+    "Run image with repo2docker"
+
+    c.run("docker rmi r2d-microbe",warn=True)
+    c.run("jupyter-repo2docker --debug -P --image-name r2d-microbe .".format(
+        version=c.version, docker_user=c.docker.user, docker_repo=c.docker.repo), pty=True)
+
 
 @task(build)
 def docker_push(c):
@@ -256,12 +301,4 @@ def gittest(c):
 
 @task()
 def test(c):
-    #print(dir(c.build.conda))
-    #print(c.build.conda.core._keypath[-1])
-    #print(c.build.conda.core._root.version)
-    #print(c.build.conda._config)
-    #print(c.build.micromamba.base.build._keypath)
-    #print(c.build.micromamba.base.build._keypath[1])
-    #print(c.build.micromamba.base.build._keypath[1:])
-
     print(get_imagename(c.build.micromamba.base.build))

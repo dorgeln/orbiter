@@ -1,21 +1,19 @@
 #syntax=docker/dockerfile:1.2
 
-FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | stage }}-build-{{ b | version }} as build
+FROM dorgeln/microbe:micromamba-full-build-0.0.20 as build
 
 RUN find /env -name "*.pyc" -exec rm -f {} \; && \
     find /env -name "*.pyx" -exec rm -f {} \; && \
     find /env -name '*.a' -exec rm -f {} \; && \
     find /env -name '__pycache__' -type d -exec rm -rf '{}' '+'
 
-FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | image }}-{{ b |version }}
+FROM dorgeln/microbe:micromamba-core-0.0.20
 
-LABEL maintainer="{{ b | maintainer }}"
+LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
 
-{% if 'apk' in b %}
-{% include 'apk' %}
-{% endif %}
 
-COPY --chown={{ user }} --from=build /env  /env
+
+COPY --chown= --from=build /env  /env
 
 WORKDIR ${HOME}
 CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]

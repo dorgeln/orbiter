@@ -1,0 +1,23 @@
+---
+channels:
+- conda-forge
+dependencies:
+- intake
+- intake-stac
+- sat-search
+- fiona
+- shapely
+- pyproj
+- rtree
+- geopandas
+- rasterio
+- geopy
+- xarray
+- dvc
+- jupyter-book
+- h5py
+- netcdf4
+- cysgp4
+- asciinema
+- Pillow
+name: base

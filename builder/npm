@@ -1,0 +1,4 @@
+USER {{ b | user }}
+WORKDIR ${NPM_DIR}
+COPY --chown=${NB_USER} package.json  ${NPM_DIR}/package.json
+RUN npm install --prefix ${NPM_DIR} && npm cache clean --force

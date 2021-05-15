@@ -4,22 +4,15 @@ FROM {{ b | image}}
 
 ENV VERSION={{ b | version }}
 ENV PYTHON_VERSION={{ b | python_version }}
-ENV DOCKER_USER={{ b | user }}
-ENV DOCKER_REPO={{ b | repo }}
+ENV DOCKER_USER={{ b | docker_user }}
+ENV DOCKER_REPO={{ b | docker_repo }}
 ENV NB_USER={{ b | user }}
 ENV NB_UID={{ b | uid }}
 ENV NB_GID={{ b | gid }}
 
 LABEL maintainer="{{ b | maintainer }}"
 
-COPY alpine.pkg alpine.pkg
-RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  apk add --no-cache ${PKG}
-RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
-
-RUN adduser --disabled-password  -u ${NB_UID} -G users ${NB_USER} && \
-    addgroup -g ${NB_UID}  ${NB_USER} && \
-    adduser ${NB_USER} ${NB_USER} && \
-    adduser ${NB_USER} wheel
+{% include 'alpine_core' %}
 
 ENV ENV_ROOT="/env" 
 ENV BUILD_ROOT="/build"
@@ -71,4 +64,3 @@ RUN curl https://pyenv.run | bash
 
 CMD ["jupyter", "lab", "--ip", "0.0.0.0","--no-browser","--NotebookApp.token=''","--NotebookApp.password=''"]
 EXPOSE 8888
-

@@ -1,0 +1,26 @@
+
+{% if 'apk' in b %}
+{% include 'apk' %}
+{% endif %}
+
+RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
+RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile
+
+{% include 'adduser' %}
+
+ENV VERSION={{ b | version }} \
+    PYTHON_VERSION={{ b | python_version }} \
+    DOCKER_USER={{ b | docker_user }} \
+    DOCKER_REPO={{ b | docker_repo }} \
+    NB_USER={{ b | user }} \
+    NB_UID={{ b | uid }} \ 
+    NB_GID={{ b | gid }}
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    SHELL=/bin/bash \
+    JUPYTER_ENABLE_LAB=yes \
+    USER=${NB_USER} \
+    HOME=/home/${NB_USER} \
+    REPO_DIR=/home/${NB_USER} \
+    XDG_CACHE_HOME=/home/${NB_USER}/.cache

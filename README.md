@@ -8,7 +8,7 @@ Microbe includes the following [Invoke](http://www.pyinvoke.org/) tasks to help 
 | Task | Help |
 | --- | --- |
 | bash | Bash into image |
-| build | Build all images |
+| build | Build image(s) |
 | clean | Clean generated files |
 | clean-docker | Clean dangling docker images |
 | docker-push | Push images to docker hub |
@@ -29,15 +29,14 @@ All microbe configuration is done in invoke.yaml.
 ```
 version: 0.0.20
 maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
+user: jovyan
+uid: 1000
+gid: 100
+
 
 docker:
   user: dorgeln
   repo: microbe
-
-nb:
-  user: jovyan
-  uid: 1000
-  gid: 100
 
 python:
   version: 3.8.8
@@ -115,7 +114,7 @@ build:
             - Pillow
 
 
-  pip:
+  alpine:
     core:
       image: alpine:20210212
       builder: pip_core
@@ -164,8 +163,6 @@ build:
         - libjpeg-turbo
         - libwebp
         - libimagequant 
-      pip:
-        - vega_datasets
 
       build:
         image: core 
@@ -230,43 +227,12 @@ build:
           - jupyterlab-spellchecker
           - matplotlib
           - jupyterlab-git
+          - cython
 
     full:
-      apk: 
-        - geos-dev
-        - proj-dev
-        - hdf5-dev
-        - netcdf-dev
-        - gdal-dev gdal-tools
-        - proj-dev
-        - proj-util
-        - geos-dev
-        - libgit2-dev
+      image: core 
+      builder: pip_deploy
 
-      pip: 
-        - intake
-        - intake-stac
-        - sat-search
-        - fiona shapely
-        - pyproj
-        - rtree
-        - geopandas
-        - rasterio
-        - geopy
-        - xarray
-        - dvc
-        - jupyter-book
-        - h5py
-        - netcdf4
-        - cysgp4
-        - asciinema
-        - lolcat
-        - ttygif
-        - Pillow
-        - nbdev
-
-    
-    full:
       apk: 
         - neofetch
         - libffi
@@ -289,6 +255,44 @@ build:
         - proj
         - proj-util
         - libgit2
+
+
+      build:
+        image: base-build 
+        builder: pip_builder
+        apk: 
+          - geos-dev
+          - proj-dev
+          - hdf5-dev
+          - netcdf-dev
+          - gdal-dev gdal-tools
+          - proj-dev
+          - proj-util
+          - geos-dev
+          - libgit2-dev
+
+        pip: 
+          - intake
+          - intake-stac
+          - sat-search
+          - fiona shapely
+          - pyproj
+          - rtree
+          - geopandas
+          - rasterio
+          - geopy
+          - xarray
+          - dvc
+          - jupyter-book
+          - h5py
+          - netcdf4
+          - cysgp4
+          - asciinema
+          - lolcat
+          - ttygif
+          - Pillow
+          - nbdev
+
 
 
 debug: true

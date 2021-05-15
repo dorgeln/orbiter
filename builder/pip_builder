@@ -1,25 +1,23 @@
 #syntax=docker/dockerfile:1.2
 
-FROM {{ b | user }}/{{ b | repo }}:{{ b | build }}-{{ b | image }}-{{ b | version }}
+FROM {{ b | docker_user }}/{{ b | docker_repo }}:{{ b | build }}-{{ b | image }}-{{ b | version }}
 LABEL maintainer="{{ b | maintainer }}"
 
+{% if 'apk' in b %}
+{% include 'apk' %}
+{% endif %}
 
-COPY alpine.pkg alpine.pkg
-RUN PKG=`cat alpine.pkg` && echo "Installing ${PKG}" &&  sudo apk add --no-cache ${PKG}
+{% include 'pyenv_python' %}
 
-RUN echo "Installing Python-${PYTHON_VERSION}" && pyenv install ${PYTHON_VERSION} && pyenv global ${PYTHON_VERSION}
-RUN pip install -U  pip -U setuptools -U wheel -U cython-setuptools
+{% if 'npm' in b %}
+{% include 'npm' %}
+{% endif %}
 
-WORKDIR ${NPM_DIR}
-COPY --chown=${NB_USER} package.json  ${NPM_DIR}/package.json
-RUN npm install --prefix ${NPM_DIR} && npm cache clean --force
-
-WORKDIR ${PYENV_ROOT}
-COPY --chown=${NB_USER} requirements.txt requirements.txt
-RUN --mount=type=cache,id=pip-cache,target=/build/cache,uid={{ b | uid }},gid={{ b | gid }} \
-    --mount=type=cache,id=pip-tmp,target=/build/tmp,uid={{ b | uid }},gid={{ b | gid }} \  
-    pip install -r requirements.txt
+{% if 'pip' in b %}
+{% include 'pip' %}
+{% endif %}
 
 # RUN jupyter serverextension enable --sys-prefix nbgitpuller  && jupyter serverextension enable --sys-prefix jupyter_server_proxy && python -m sshkernel install --sys-prefix && python -m bash_kernel.install --sys-prefix  && jupyter serverextension enable --sys-prefix sshkernel && jupyter lab clean  -y && npm cache clean --force
 
+USER {{ b | user }}
 WORKDIR ${HOME}
