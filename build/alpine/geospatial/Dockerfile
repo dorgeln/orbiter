@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM dorgeln/microbe:alpine-full-build-0.0.20 as build
+FROM dorgeln/microbe:alpine-geospatial-build-0.0.20 as build
 FROM dorgeln/microbe:alpine-core-0.0.20
 
 

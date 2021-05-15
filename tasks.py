@@ -13,8 +13,8 @@ templates = jinja2.Environment(loader=jinja2.FileSystemLoader("builder"))
 def clean(c):
     "Clean generated files"
 
-    c.run("rm -f pyproject.toml package*.json Dockerfile README.md build-*",warn=True)
-    c.run("rm -rf  build",warn=True)
+    c.run("rm -f pyproject.toml package*.json README.md build-*",warn=True)
+    c.run("rm -rf  build docker",warn=True)
 
 
 @task()
@@ -23,14 +23,16 @@ def clean_docker(c):
 
     c.run('docker rmi $(docker images -f "dangling=true" -q)',warn=True)
 
-
-def get_path(b):
-    return os.path.join(*b._keypath)
-
 def mkdir(c,b):
 
     c.run('mkdir -p {path}'.format(path=get_path(b)))
         
+
+
+def get_path(b):
+    return os.path.join(*b._keypath)
+
+
 def get_build(b):
     return(b._keypath[1])
 templates.filters['build'] = get_build
@@ -129,7 +131,6 @@ def gen_pip(c,b):
     c.run("poetry config virtualenvs.path .env")
     c.run("poetry config cache-dir .cache")
     c.run("poetry config virtualenvs.in-project true")
-
     c.run("poetry add -v --lock {pkgs}".format(pkgs=pkgs))
     c.run("poetry export --without-hashes -f requirements.txt -o {file}".format(file=file))
 
@@ -186,7 +187,7 @@ def readme(c):
         with open("invoke.yaml","r") as invoke_yaml:
             file.write(readme.render(invoke_list=invoke_list,invoke_yaml=invoke_yaml.read()))
 
-@task(clean,readme)
+@task(readme,clean)
 def build(c,build=None,image=None):
     "Build image(s)"
 

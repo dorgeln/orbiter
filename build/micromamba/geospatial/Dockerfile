@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM dorgeln/microbe:micromamba-full-build-0.0.20 as build
+FROM dorgeln/microbe:micromamba-geospatial-build-0.0.20 as build
 
 RUN find /env -name "*.pyc" -exec rm -f {} \; && \
     find /env -name "*.pyx" -exec rm -f {} \; && \

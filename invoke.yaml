@@ -53,7 +53,7 @@ build:
             - cython
             - bash_kernel
 
-    full:
+    geospatial:
       image: core   
       builder: micromamba_deploy
 
@@ -114,12 +114,7 @@ build:
         - tiff
         - freetype
         - pixman
-        - zeromq 
-
-    base:
-      image: core   
-      builder: pip_deploy
-      apk:
+        - zeromq
         - neofetch
         - libffi
         - libzmq
@@ -127,13 +122,19 @@ build:
         - libffi
         - librsvg
         - giflib
-        - libpng libxml2
+        - libpng 
+        - libxml2
         - libnsl
         - libxslt
         - libtirpc
         - libjpeg-turbo
         - libwebp
         - libimagequant 
+ 
+
+    base:
+      image: core   
+      builder: pip_deploy
 
       build:
         image: core 
@@ -200,26 +201,11 @@ build:
           - jupyterlab-git
           - cython
 
-    full:
-      image: core 
+    geospatial:
+      image: core
       builder: pip_deploy
 
       apk: 
-        - neofetch
-        - libffi
-        - libzmq
-        - sqlite-libs
-        - libffi
-        - librsvg
-        - giflib
-        - libpng
-        - libxml2
-        - libnsl
-        - libxslt
-        - libtirpc
-        - libjpeg-turbo
-        - libwebp
-        - libimagequant
         - geos
         - gdal
         - gdal-tools
