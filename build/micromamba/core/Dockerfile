@@ -16,7 +16,7 @@ USER root
 RUN adduser --disabled-password  -u 1000 -G users jovyan && \
     adduser jovyan wheel
 
-ENV VERSION=0.0.20 \
+ENV VERSION=0.0.21 \
     PYTHON_VERSION=3.8.8 \
     DOCKER_REPO=dorgeln/orbiter \
     NB_USER=jovyan \

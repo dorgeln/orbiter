@@ -1,9 +1,7 @@
 FROM {{ b | repo }}:{{ b | build }}-{{ b | stage }}-{{ b | version }}
-
-# For use on  mybinder.org please uncomment the following lines
-# This isn't necessary for mybinder.org links generated with https://jupyterhub.github.io/nbgitpuller/link?tab=binder
-
-# COPY . ${HOME}
-# USER root
-# RUN chown -R ${NB_UID} ${HOME}
-# USER ${NB_USER}
+ARG NB_USER={{ b | user }}
+ARG NB_UID={{ b | uid }} 
+COPY . ${HOME}
+USER root
+RUN chown -R ${NB_UID} ${HOME}
+USER ${NB_USER}

@@ -1,4 +1,4 @@
-version: 0.0.20
+version: 0.0.21
 maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
 
 user: jovyan
@@ -206,7 +206,7 @@ build:
           - bash_kernel
           - sshkernel
           - jupyter-book
-          - quantecon-book-theme
+          - sphinx-book-theme
           - sphinx-thebe
 
         postbuild:
