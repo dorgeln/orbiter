@@ -15,4 +15,5 @@ dependencies:
 - matplotlib
 - cython
 - bash_kernel
+- jupyter-book
 name: base

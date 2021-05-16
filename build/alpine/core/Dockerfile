@@ -5,8 +5,7 @@ FROM alpine:20210212
 
 ENV VERSION=0.0.20
 ENV PYTHON_VERSION=3.8.8
-ENV DOCKER_USER=dorgeln
-ENV DOCKER_REPO=microbe
+ENV DOCKER_REPO=dorgeln/orbiter
 ENV NB_USER=jovyan
 ENV NB_UID=1000
 ENV NB_GID=100
@@ -14,11 +13,10 @@ ENV NB_GID=100
 LABEL maintainer="Andreas Trawoeger <atrawog@dorgeln.org>"
 
 USER root
+WORKDIR /root
 COPY alpine.pkg alpine.pkg
 RUN --mount=type=cache,id=apk-cache,target=/etc/apk/cache \
     PKG=`cat alpine.pkg` && echo "Installing ${PKG}" && apk add ${PKG}
-
-
 RUN echo '%wheel ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/wheel && chmod 0440 /etc/sudoers.d/wheel
 RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile
 
@@ -28,8 +26,7 @@ RUN adduser --disabled-password  -u 1000 -G users jovyan && \
 
 ENV VERSION=0.0.20 \
     PYTHON_VERSION=3.8.8 \
-    DOCKER_USER=dorgeln \
-    DOCKER_REPO=microbe \
+    DOCKER_REPO=dorgeln/orbiter \
     NB_USER=jovyan \
     NB_UID=1000 \ 
     NB_GID=100

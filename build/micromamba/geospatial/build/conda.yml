@@ -14,7 +14,6 @@ dependencies:
 - geopy
 - xarray
 - dvc
-- jupyter-book
 - h5py
 - netcdf4
 - cysgp4

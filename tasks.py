@@ -5,33 +5,42 @@ import json
 import git
 import os.path
 import sys
+from pathlib import Path
+import collections
 
 templates = jinja2.Environment(loader=jinja2.FileSystemLoader("builder"))
 
+
+def flatten(x):
+    result = []
+    for el in x:
+        if isinstance(x, collections.Iterable) and not isinstance(el, str):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
 
 @task()
 def clean(c):
     "Clean generated files"
 
     c.run("rm -f pyproject.toml package*.json README.md build-*",warn=True)
-    c.run("rm -rf  build docker",warn=True)
+    c.run("rm -rf  build dockerfiles",warn=True)
 
 
 @task()
-def clean_docker(c):
+def docker_clean(c):
     "Clean dangling docker images"
 
     c.run('docker rmi $(docker images -f "dangling=true" -q)',warn=True)
 
 def mkdir(c,b):
-
     c.run('mkdir -p {path}'.format(path=get_path(b)))
-        
+   
 
 
 def get_path(b):
     return os.path.join(*b._keypath)
-
 
 def get_build(b):
     return(b._keypath[1])
@@ -53,13 +62,9 @@ def get_gid(b):
     return(b._root.gid)
 templates.filters['gid'] = get_gid
 
-def get_docker_user(b):
-    return(b._root.docker.user)
-templates.filters['docker_user'] = get_docker_user
-
-def get_docker_repo(b):
+def get_repo(b):
     return(b._root.docker.repo)
-templates.filters['docker_repo'] = get_docker_repo
+templates.filters['repo'] = get_repo
 
 def get_version(b):
     return(b._root.version)
@@ -87,33 +92,32 @@ templates.filters['imagename'] = get_imagename
 
 def get_builder(b):
     return(b.builder)
-templates.filters['builder)'] = get_builder
+templates.filters['builder'] = get_builder
 
+def get_postbuild(b):
+    return(' && '.join(flatten(b.postbuild)))
+templates.filters['postbuild'] = get_postbuild
 
 def docker_build(c,b):
-
-    c.run("docker buildx build --progress plain --load -t {user}/{repo}:{imagename} {path} | tee build-{imagename}.log".format(
-        user=get_docker_user(b),
-        repo=get_docker_repo(b),  
+    c.run("docker buildx build --progress plain --load -t {repo}:{imagename} {path} | tee build-{imagename}.log".format(
+        repo=get_repo(b),  
         imagename=get_imagename(b),
         path=get_path(b)
         ))
 
 def gen_apk(c,b):
 
-    pkgs = ' '.join([pkg for pkg in b.apk])
+    pkgs = ' '.join([pkg for pkg in flatten(b.apk)])
     with open('{path}/alpine.pkg'.format(path=get_path(b)),'w') as file:
         file.write(pkgs+'\n')
 
 def gen_conda(c,b):
-
     with open(r'{path}/conda.yml'.format(path=get_path(b)), 'w') as file:
         yaml.dump(get_conda(b), file, sort_keys=True, canonical=False, explicit_start=True)
 
 
 def gen_npm(c,b):
-
-    pkgs = ' '.join([pkg for pkg in b.npm])
+    pkgs = ' '.join([pkg for pkg in flatten(b.npm)])
     file='{path}/package.json'.format(path=get_path(b))
 
     c.run("npm install - -package-lock-only {pkgs}".format(pkgs=pkgs))
@@ -121,8 +125,7 @@ def gen_npm(c,b):
 
 
 def gen_pip(c,b):
-
-    pkgs = ' '.join([pkg for pkg in b.pip])
+    pkgs = ' '.join([pkg for pkg in flatten(b.pip)])
     file='{path}/requirements.txt'.format(path=get_path(b))
 
     if not os.path.exists('pyproject.toml'):
@@ -139,6 +142,19 @@ def gen_builder(c,b):
     dockerfile = templates.get_template(get_builder(b))
     with open('{path}/Dockerfile'.format(path=get_path(b)),'w') as file:
         file.write(dockerfile.render(b=b))
+
+
+def get_dockerfile_path(b):
+    return 'dockerfiles/{build}/{stage}'.format(build=get_build(b),stage='-'.join(b._keypath[2:]))
+
+def gen_dockerfile(c,b):
+   
+    dockerfile = templates.get_template('dockerfile')
+    path=get_dockerfile_path(b)
+    if not 'build' in path and not 'core' in path:
+        c.run('mkdir -p {path}'.format(path=path))
+        with open('{path}/Dockerfile'.format(path=path),'w') as file:
+            file.write(dockerfile.render(b=b))
 
 
 def builder(c,b):
@@ -167,7 +183,8 @@ def builder(c,b):
     if 'pip' in b:
         gen_pip(c,b)
 
-    docker_build(c,b) 
+    docker_build(c,b)
+    gen_dockerfile(c,b) 
 
 
 @task()
@@ -204,7 +221,7 @@ def build(c,build=None,image=None):
             builder(c,c.build[b][image])
 
 @task(help={'image': 'Image','version':'Version'})
-def bash(c,build=None,image=None,user=None,repo=None,version=None):
+def bash(c,build=None,image=None,repo=None,version=None):
     "Bash into image"
 
     if not build:
@@ -213,17 +230,13 @@ def bash(c,build=None,image=None,user=None,repo=None,version=None):
     if not image:
         sys.exit("Please set image with -i")    
 
-    if not user:
-        user=c.docker.user
-
     if not repo:
         repo=c.docker.repo
 
     if not version:
         version=c.version
 
-    c.run("docker run -it {user}/{repo}:{build}-{image}-{version} bash".format(
-        user=user,
+    c.run("docker run -it {repo}:{build}-{image}-{version} bash".format(
         repo=repo,
         build=build,
         image=image,
@@ -232,7 +245,7 @@ def bash(c,build=None,image=None,user=None,repo=None,version=None):
 
 
 @task(help={'image': 'Image','version':'Version'})
-def run(c,build=None,image=None,user=None,repo=None,version=None):
+def run(c,build=None,image=None,repo=None,version=None,mount=None):
     "Run image"
 
     if not build:
@@ -241,57 +254,78 @@ def run(c,build=None,image=None,user=None,repo=None,version=None):
     if not image:
         sys.exit("Please set image with -i")    
 
-    if not user:
-        user=c.docker.user
-
     if not repo:
         repo=c.docker.repo
 
     if not version:
         version=c.version
 
-    c.run("docker run -p 8888:8888  {user}/{repo}:{build}-{image}-{version}".format(
-        user=user,
-        repo=repo,
-        build=build,
-        image=image,
-        version=version        
-        ), pty=True)
+    if not mount:
+        mount=c.docker.mount
+
+    mount_path=Path(mount).resolve()
+
+    b=c.build[build][image]
+
+    if not mount:
+        c.run("docker run -p 8888:8888  {repo}:{build}-{image}-{version}".format(
+
+            repo=repo,
+            build=build,
+            image=image,
+            version=version        
+            ), pty=True)
+    else:
+        c.run("docker run --volume {mount_path}:/home/{user}/{mount} -p 8888:8888  {repo}:{build}-{image}-{version}".format(
+            user=get_user(b),
+            repo=repo,
+            build=build,
+            image=image,
+            version=version,
+            mount_path=mount_path,
+            mount=mount  
+            ), pty=True)
 
 
 @task()
-def r2d(c):
+def r2d(c,build=None,image=None):
     "Run image with repo2docker"
 
-    c.run("docker rmi r2d-microbe",warn=True)
-    c.run("jupyter-repo2docker --debug -P --image-name r2d-microbe .".format(
-        version=c.version, docker_user=c.docker.user, docker_repo=c.docker.repo), pty=True)
+    if not build:
+        sys.exit("Please set build with -b")    
+
+    if not image:
+        sys.exit("Please set image with -i")    
+
+    b=c.build[build][image]
+
+    path=get_dockerfile_path(b)
+    c.run("docker rmi r2d",warn=True)
+    c.run("jupyter-repo2docker --debug -P --image-name r2d {path}".format(path=path), pty=True)
 
 
 @task(build)
 def docker_push(c):
     "Push images to docker hub"
 
-    c.run("docker image push -a {docker_user}/{docker_repo}".format(
-        docker_user=c.docker.user, docker_repo=c.docker.repo))
+    c.run("docker image push -a {repo}".format(
+        repo=c.docker.repo))
 
 
 @task(readme)
 def docker_pushrm(c):
     "Push README to docker hub"
 
-    c.run("docker pushrm {docker_user}/{docker_repo}".format(docker_user=c.docker.user, docker_repo=c.docker.repo))
-
-
-@task(build,readme,docker_push,docker_pushrm)
-def push(c):
-    "Push images to docker hub"
-
-    print("Pushing Images")
+    c.run("docker pushrm {repo}".format(repo=c.docker.repo))
 
 
 @task()
-def prune(c):
+def docker_rmi(c):
+    "Remove all local docker images"
+    c.run("docker rmi -f $(docker images -a -q)",warn=True)
+
+@task()
+def docker_prune(c):
     "Prune all local docker images"
     c.run("docker system prune -a")
 
@@ -300,6 +334,21 @@ def gittest(c):
     g = git.Repo().git
     print(str(g.branch("--show-current")))
 
+
+def flat(x):
+    def iselement(e):
+        return not(isinstance(e, collections.Iterable) and not isinstance(e, str))
+    for el in x:
+        if iselement(el):
+            yield el
+        else:
+            yield from flat_gen(el)    
+
+
+
 @task()
 def test(c):
-    print(get_imagename(c.build.micromamba.base.build))
+
+    b = c.build.alpine.base.build
+
+    print(get_postbuild(b))

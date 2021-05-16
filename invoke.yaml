@@ -1,17 +1,26 @@
 version: 0.0.20
 maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
+
 user: jovyan
 uid: 1000
 gid: 100
 
-
 docker:
-  user: dorgeln
-  repo: microbe
+  repo: dorgeln/orbiter
+  mount: book
 
 python:
   version: 3.8.8
   required: ">=3.8,<3.9"
+
+apk: &alpine_core
+  - bash 
+  - tar
+  - bzip2 
+  - curl 
+  - sudo
+  - git
+ 
 
 build:
   micromamba:
@@ -19,13 +28,8 @@ build:
       image: frolvlad/alpine-glibc
       builder: micromamba_core
 
-      apk:
-        - bash 
-        - tar
-        - bzip2 
-        - curl 
-        - sudo
-        - git
+      apk: 
+        - *alpine_core
 
     base:
       image: core   
@@ -52,6 +56,11 @@ build:
             - matplotlib
             - cython
             - bash_kernel
+            - jupyter-book
+        postbuild:
+          - jupyter serverextension enable --sys-prefix nbgitpuller
+          - jupyter serverextension enable --sys-prefix jupyter_server_proxy
+          - jupyter lab clean  -y
 
     geospatial:
       image: core   
@@ -77,23 +86,18 @@ build:
             - geopy
             - xarray
             - dvc
-            - jupyter-book
             - h5py
             - netcdf4
             - cysgp4
             - asciinema
             - Pillow
 
-
   alpine:
     core:
       image: alpine:20210212
       builder: pip_core
       apk:
-        - sudo 
-        - bash 
-        - curl 
-        - git
+        - *alpine_core 
         - git-lfs
         - ttf-liberation
         - nodejs
@@ -130,7 +134,6 @@ build:
         - libjpeg-turbo
         - libwebp
         - libimagequant 
- 
 
     base:
       image: core   
@@ -200,6 +203,20 @@ build:
           - matplotlib
           - jupyterlab-git
           - cython
+          - bash_kernel
+          - sshkernel
+          - jupyter-book
+          - quantecon-book-theme
+          - sphinx-thebe
+
+        postbuild:
+          - python -m sshkernel install --sys-prefix
+          - python -m bash_kernel.install --sys-prefix
+          - jupyter serverextension enable --sys-prefix sshkernel
+          - jupyter serverextension enable --sys-prefix nbgitpuller
+          - jupyter serverextension enable --sys-prefix jupyter_server_proxy
+          - jupyter lab clean  -y
+
 
     geospatial:
       image: core
@@ -240,7 +257,6 @@ build:
           - geopy
           - xarray
           - dvc
-          - jupyter-book
           - h5py
           - netcdf4
           - cysgp4
@@ -249,7 +265,6 @@ build:
           - ttygif
           - Pillow
           - nbdev
-
 
 
 debug: true

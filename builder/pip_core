@@ -5,8 +5,7 @@ FROM {{ b | image}}
 
 ENV VERSION={{ b | version }}
 ENV PYTHON_VERSION={{ b | python_version }}
-ENV DOCKER_USER={{ b | docker_user }}
-ENV DOCKER_REPO={{ b | docker_repo }}
+ENV DOCKER_REPO={{ b | repo }}
 ENV NB_USER={{ b | user }}
 ENV NB_UID={{ b | uid }}
 ENV NB_GID={{ b | gid }}

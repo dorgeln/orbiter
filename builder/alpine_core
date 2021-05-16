@@ -9,8 +9,7 @@ RUN sed -i "s/^export PATH=/#export PATH=L/g" /etc/profile
 
 ENV VERSION={{ b | version }} \
     PYTHON_VERSION={{ b | python_version }} \
-    DOCKER_USER={{ b | docker_user }} \
-    DOCKER_REPO={{ b | docker_repo }} \
+    DOCKER_REPO={{ b | repo }} \
     NB_USER={{ b | user }} \
     NB_UID={{ b | uid }} \ 
     NB_GID={{ b | gid }}
