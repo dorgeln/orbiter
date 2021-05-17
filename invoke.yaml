@@ -1,18 +1,25 @@
-version: 0.0.21
+# Version and maintainer
+version: 0.1.0 
 maintainer: Andreas Trawoeger <atrawog@dorgeln.org>
 
+# Notebook user for image
 user: jovyan
 uid: 1000
 gid: 100
 
+# Docker settings
 docker:
   repo: dorgeln/orbiter
-  mount: book
+  mount: book # Local directory used for run task bind mount
 
+# Python settings
+# Only used for pip builder
 python:
   version: 3.8.8
   required: ">=3.8,<3.9"
 
+
+# Yaml anchors 
 apk: &alpine_core
   - bash 
   - tar
@@ -21,7 +28,7 @@ apk: &alpine_core
   - sudo
   - git
  
-
+# Build definitions
 build:
   micromamba:
     core:
@@ -266,7 +273,7 @@ build:
           - Pillow
           - nbdev
 
-
+# Invoke settings
 debug: true
 run:
   echo: true

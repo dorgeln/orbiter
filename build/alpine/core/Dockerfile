@@ -3,7 +3,7 @@
 
 FROM alpine:20210212
 
-ENV VERSION=0.0.21
+ENV VERSION=0.1.0
 ENV PYTHON_VERSION=3.8.8
 ENV DOCKER_REPO=dorgeln/orbiter
 ENV NB_USER=jovyan
@@ -24,7 +24,7 @@ USER root
 RUN adduser --disabled-password  -u 1000 -G users jovyan && \
     adduser jovyan wheel
 
-ENV VERSION=0.0.21 \
+ENV VERSION=0.1.0 \
     PYTHON_VERSION=3.8.8 \
     DOCKER_REPO=dorgeln/orbiter \
     NB_USER=jovyan \
